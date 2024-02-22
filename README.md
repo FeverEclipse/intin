@@ -1,7 +1,7 @@
 # intin 
 This is a personal project that uses React,Express.js,Node.js,MySQL(MariaDB).
 
-This project delivers a Q&A website experience and is published at https://intin.com.tr.
+This project delivers a Q&A website experience in Turkish and is published at https://intin.com.tr.
 
 You can reach me at https://www.linkedin.com/in/menevseyup/.
 
