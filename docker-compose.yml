@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mariadb:latest
+    ports:
+      - "127.0.0.1:3306:3306"
+    networks:
+      - app-network
+    environment:
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8282:3000"  # Map TCP port 80 in the container to port 80 on the Docker host.
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    environment:
+      PUBLIC_URL: "${FRONTEND_URL}"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8383:3300"  # Map the port your backend runs on to the same port on the Docker host
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+    environment:
+      MYSQL_HOSTNAME: "mysql"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      FRONTEND_URL: "${FRONTEND_URL}"
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
