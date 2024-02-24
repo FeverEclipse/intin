@@ -1,5 +1,5 @@
 # intin 
-This is a personal project that uses React,Express.js,Node.js,MySQL(MariaDB).
+This is a personal project that uses React,Express.js,Node.js,MySQL(MariaDB),Docker.
 
 This project delivers a Q&A website experience and is published at https://intin.com.tr.
 
