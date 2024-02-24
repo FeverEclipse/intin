@@ -5,6 +5,7 @@ import axios from 'axios';
 import Sidebar from './Sidebar.jsx';
 import { useState } from 'react';
 import Reply from './Reply.jsx';
+import Navbar from './Navbar.jsx';
 
 var pageId = '';
 
@@ -43,6 +44,17 @@ function Post() {
 	}
     pageId = useParams().pageId;
     const [curPage, setCurPage] = useState([]);
+    const [width, setWidth] = useState(window.innerWidth);
+    const breakpoint = 768;
+    useEffect(() => {
+        const handleResizeWindow = () => setWidth(window.innerWidth);
+         // subscribe to window resize event "onComponentDidMount"
+        window.addEventListener("resize", handleResizeWindow);
+        return () => {
+            // unsubscribe "onComponentDestroy"
+            window.removeEventListener("resize", handleResizeWindow);
+        };
+    }, [])
     axios.defaults.withCredentials = true;
     useEffect(() => {
         const fetchAuthStatus = async () => {
@@ -154,48 +166,91 @@ function Post() {
       // Date nesnesinin metotlarını kullanarak istediğiniz formatta bir karakter dizisi oluşturun
       let formattedDate = jsDate.getDate () + "." + (jsDate.getMonth () + 1) + "." + jsDate.getFullYear () + " " + jsDate.getHours () + ":" + jsDate.getMinutes ();
         if(curPage[0].idEntry === (Number(pageId))){
-            return (
-                <div className='flex w-full'>
-                    <Sidebar isLoggedIn={isLoggedIn} username={username} />
-                    <div className='min-w-60'></div>
-                    <div className='p-4 pt-0 w-full'>
-                        <div className='bg-white flex w-full gap-x-2 fixed z-10'>
-                            <button onClick={goBack} className='mt-4 mb-2 hover:opacity-60 min-w-fit'><img className='w-8 h-8' src={`/assets/Back.png`} alt="Back Icon"/></button>
-                            <h1 className='font-inter text-onyx text-3xl mt-4 min-w-fit'>Soru</h1>
-                            
-                        </div>
-                        <div className='mt-20'>
-                            <div className='flex'>
-                            <h1 className='text-4xl min-w-fit'>{curPage[0].Title}</h1>
-                            <div className='w-full'></div>
-                            {isLoggedIn && curPage[0].username===username ? <button onClick={handleDelete} className='min-w-fit h-10 p-2 rounded-md hover:bg-gray-200 duration-200'><img className='w-6 h-6' alt='Delete Icon' src='/assets/Delete.png'></img></button> : <p></p>}
+            if(width>breakpoint){
+                return (
+                    <div className='flex w-full'>
+                        <Sidebar isLoggedIn={isLoggedIn} username={username} />
+                        <div className='min-w-60'></div>
+                        <div className='p-4 pt-0 w-full'>
+                            <div className='bg-white flex w-full gap-x-2 fixed z-10'>
+                                <button onClick={goBack} className='mt-4 mb-2 hover:opacity-60 min-w-fit'><img className='w-8 h-8' src={`/assets/Back.png`} alt="Back Icon"/></button>
+                                <h1 className='font-inter text-onyx text-3xl mt-4 min-w-fit'>Soru</h1>
+                                
                             </div>
+                            <div className='mt-20'>
+                                <div className='flex'>
+                                <h1 className='text-4xl min-w-fit'>{curPage[0].Title}</h1>
+                                <div className='w-full'></div>
+                                {isLoggedIn && curPage[0].username===username ? <button onClick={handleDelete} className='min-w-fit h-10 p-2 rounded-md hover:bg-gray-200 duration-200'><img className='w-6 h-6' alt='Delete Icon' src='/assets/Delete.png'></img></button> : <p></p>}
+                                </div>
+                            
+                            <p>{curPage[0].Content}</p>
+                            <div className='flex gap-x-6 mt-3'>
+                                {liked ? <button className='flex p-1 min-w-fit min-h-fit gap-x-2 rounded-md hover:bg-gray-200 duration-200' onClick={handlePostLike}>
+                                    <img className='w-6 h-6' alt='Like Icon' src='/assets/Like.png'></img>
+                                    <p>{curPage[0].Likes}</p>
+                                </button> : <button className='flex p-1 min-w-fit min-h-fit gap-x-2 rounded-md hover:bg-gray-200 duration-200' onClick={handlePostLike}>
+                                    <img className='w-6 h-6' alt='Like Icon' src='/assets/Like_light.png'></img>
+                                    <p>{curPage[0].Likes}</p>
+                                </button>}
+                                <p className='min-w-fit pt-1'>{formattedDate}</p>
+                                <div className='w-full'></div>
+                                <p className='min-w-fit'>{curPage[0].username} tarafından soruldu.</p>
+                            </div>
+                            <hr></hr>
+                            <p className='text-2xl'>Cevaplar</p>
+                            <div className='w-full mt-1 mb-3 p-2 border-1 rounded-md'>
+                                <input className='w-full min-h-12 p-1 h-2 font-inter' placeholder='Yanıtını Yaz.' value={reply} onChange={e => setReply(e.target.value)} />
+                                <button className='w-32 mt-2 h-12 rounded-md bg-onyx opacity-70 hover:opacity-100 text-white font-inter duration-200' onClick={handleReply}>Yayınla</button>
+                            </div>
+                            <Replies idEntry= {pageId} userId = {userId} isLoggedIn= {isLoggedIn}/>
+                            </div>
+                        </div>
                         
-                        <p>{curPage[0].Content}</p>
-                        <div className='flex gap-x-6 mt-3'>
-                            {liked ? <button className='flex p-1 min-w-fit min-h-fit gap-x-2 rounded-md hover:bg-gray-200 duration-200' onClick={handlePostLike}>
-                                <img className='w-6 h-6' alt='Like Icon' src='/assets/Like.png'></img>
-                                <p>{curPage[0].Likes}</p>
-                            </button> : <button className='flex p-1 min-w-fit min-h-fit gap-x-2 rounded-md hover:bg-gray-200 duration-200' onClick={handlePostLike}>
-                                <img className='w-6 h-6' alt='Like Icon' src='/assets/Like_light.png'></img>
-                                <p>{curPage[0].Likes}</p>
-                            </button>}
-                            <p className='min-w-fit pt-1'>{formattedDate}</p>
-                            <div className='w-full'></div>
-                            <p className='min-w-fit'>{curPage[0].username} tarafından soruldu.</p>
-                        </div>
-                        <hr></hr>
-                        <p className='text-2xl'>Cevaplar</p>
-                        <div className='w-full mt-1 mb-3 p-2 border-1 rounded-md'>
-                            <input className='w-full min-h-12 p-1 h-2 font-inter' placeholder='Yanıtını Yaz.' value={reply} onChange={e => setReply(e.target.value)} />
-                            <button className='w-32 mt-2 h-12 rounded-md bg-onyx opacity-70 hover:opacity-100 text-white font-inter duration-200' onClick={handleReply}>Yayınla</button>
-                        </div>
-                        <Replies idEntry= {pageId} userId = {userId} isLoggedIn= {isLoggedIn}/>
-                        </div>
                     </div>
-                    
+                  )
+            }
+            return(
+                <div>
+                    <Navbar isLoggedIn={isLoggedIn}/>
+                    <div className='p-4 pt-0 w-full'>
+                            <div className='bg-white flex w-full gap-x-2 mt-16 fixed z-10'>
+                                <button onClick={goBack} className='mt-4 mb-2 hover:opacity-60 min-w-fit'><img className='w-8 h-8' src={`/assets/Back.png`} alt="Back Icon"/></button>
+                                <h1 className='font-inter text-onyx text-3xl mt-4 min-w-fit'>Soru</h1>
+                                
+                            </div>
+                            <div className='pt-36'>
+                                <div className='flex'>
+                                <h1 className='text-4xl min-w-fit'>{curPage[0].Title}</h1>
+                                <div className='w-full'></div>
+                                {isLoggedIn && curPage[0].username===username ? <button onClick={handleDelete} className='min-w-fit h-10 p-2 rounded-md hover:bg-gray-200 duration-200'><img className='w-6 h-6' alt='Delete Icon' src='/assets/Delete.png'></img></button> : <p></p>}
+                                </div>
+                            
+                            <p>{curPage[0].Content}</p>
+                            <div className='flex gap-x-6 mt-3'>
+                                {liked ? <button className='flex p-1 min-w-fit min-h-fit gap-x-2 rounded-md hover:bg-gray-200 duration-200' onClick={handlePostLike}>
+                                    <img className='w-6 h-6' alt='Like Icon' src='/assets/Like.png'></img>
+                                    <p>{curPage[0].Likes}</p>
+                                </button> : <button className='flex p-1 min-w-fit min-h-fit gap-x-2 rounded-md hover:bg-gray-200 duration-200' onClick={handlePostLike}>
+                                    <img className='w-6 h-6' alt='Like Icon' src='/assets/Like_light.png'></img>
+                                    <p>{curPage[0].Likes}</p>
+                                </button>}
+                                <p className='min-w-fit pt-1'>{formattedDate}</p>
+                                <div className='w-full'></div>
+                                <p className='min-w-fit'>{curPage[0].username} tarafından soruldu.</p>
+                            </div>
+                            <hr></hr>
+                            <p className='text-2xl'>Cevaplar</p>
+                            <div className='w-full mt-1 mb-3 p-2 border-1 rounded-md'>
+                                <input className='w-full min-h-12 p-1 h-2 font-inter' placeholder='Yanıtını Yaz.' value={reply} onChange={e => setReply(e.target.value)} />
+                                <button className='w-32 mt-2 h-12 rounded-md bg-onyx opacity-70 hover:opacity-100 text-white font-inter duration-200' onClick={handleReply}>Yayınla</button>
+                            </div>
+                            <Replies idEntry= {pageId} userId = {userId} isLoggedIn= {isLoggedIn}/>
+                            </div>
+                        </div>
                 </div>
-              )
+            )
+            
         }else{
             console.log(curPage)
             return(

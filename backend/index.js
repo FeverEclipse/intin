@@ -3,104 +3,7 @@ import mysql from "mysql";
 import cors from "cors";
 import session from "express-session";
 import cookieParser from "cookie-parser";
-
-var sha256 = function sha256(ascii) {
-	function rightRotate(value, amount) {
-		return (value>>>amount) | (value<<(32 - amount));
-	};
-	
-	var mathPow = Math.pow;
-	var maxWord = mathPow(2, 32);
-	var lengthProperty = 'length'
-	var i, j; // Used as a counter across the whole file
-	var result = ''
-
-	var words = [];
-	var asciiBitLength = ascii[lengthProperty]*8;
-	
-	//* caching results is optional - remove/add slash from front of this line to toggle
-	// Initial hash value: first 32 bits of the fractional parts of the square roots of the first 8 primes
-	// (we actually calculate the first 64, but extra values are just ignored)
-	var hash = sha256.h = sha256.h || [];
-	// Round constants: first 32 bits of the fractional parts of the cube roots of the first 64 primes
-	var k = sha256.k = sha256.k || [];
-	var primeCounter = k[lengthProperty];
-	/*/
-	var hash = [], k = [];
-	var primeCounter = 0;
-	//*/
-
-	var isComposite = {};
-	for (var candidate = 2; primeCounter < 64; candidate++) {
-		if (!isComposite[candidate]) {
-			for (i = 0; i < 313; i += candidate) {
-				isComposite[i] = candidate;
-			}
-			hash[primeCounter] = (mathPow(candidate, .5)*maxWord)|0;
-			k[primeCounter++] = (mathPow(candidate, 1/3)*maxWord)|0;
-		}
-	}
-	
-	ascii += '\x80' // Append Ƈ' bit (plus zero padding)
-	while (ascii[lengthProperty]%64 - 56) ascii += '\x00' // More zero padding
-	for (i = 0; i < ascii[lengthProperty]; i++) {
-		j = ascii.charCodeAt(i);
-		if (j>>8) return; // ASCII check: only accept characters in range 0-255
-		words[i>>2] |= j << ((3 - i)%4)*8;
-	}
-	words[words[lengthProperty]] = ((asciiBitLength/maxWord)|0);
-	words[words[lengthProperty]] = (asciiBitLength)
-	
-	// process each chunk
-	for (j = 0; j < words[lengthProperty];) {
-		var w = words.slice(j, j += 16); // The message is expanded into 64 words as part of the iteration
-		var oldHash = hash;
-		// This is now the undefinedworking hash", often labelled as variables a...g
-		// (we have to truncate as well, otherwise extra entries at the end accumulate
-		hash = hash.slice(0, 8);
-		
-		for (i = 0; i < 64; i++) {
-			var i2 = i + j;
-			// Expand the message into 64 words
-			// Used below if 
-			var w15 = w[i - 15], w2 = w[i - 2];
-
-			// Iterate
-			var a = hash[0], e = hash[4];
-			var temp1 = hash[7]
-				+ (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) // S1
-				+ ((e&hash[5])^((~e)&hash[6])) // ch
-				+ k[i]
-				// Expand the message schedule if needed
-				+ (w[i] = (i < 16) ? w[i] : (
-						w[i - 16]
-						+ (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15>>>3)) // s0
-						+ w[i - 7]
-						+ (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2>>>10)) // s1
-					)|0
-				);
-			// This is only used once, so *could* be moved below, but it only saves 4 bytes and makes things unreadble
-			var temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) // S0
-				+ ((a&hash[1])^(a&hash[2])^(hash[1]&hash[2])); // maj
-			
-			hash = [(temp1 + temp2)|0].concat(hash); // We don't bother trimming off the extra ones, they're harmless as long as we're truncating when we do the slice()
-			hash[4] = (hash[4] + temp1)|0;
-		}
-		
-		for (i = 0; i < 8; i++) {
-			hash[i] = (hash[i] + oldHash[i])|0;
-		}
-	}
-	
-	for (i = 0; i < 8; i++) {
-		for (j = 3; j + 1; j--) {
-			var b = (hash[i]>>(j*8))&255;
-			result += ((b < 16) ? 0 : '') + b.toString(16);
-		}
-	}
-	return result;
-};
-
+import crypto from "node:crypto";
 
 const app = express();
 app.use(express.json());
@@ -112,7 +15,7 @@ app.use(cors({
 console.log(process.env.FRONTEND_URL);
 app.use(cookieParser());
 app.use(session({
-    secret: 'secret',
+    secret: process.env.SECRET_KEY,
     resave: true,
     saveUninitialized: false,
     cookie: {
@@ -184,9 +87,10 @@ db.query(`CREATE TABLE IF NOT EXISTS reply_likes(
 db.query(`CREATE TABLE IF NOT EXISTS user(
     username varchar(16) NOT NULL,
     email varchar(255) DEFAULT NULL,
-    password varchar(200) NOT NULL COMMENT 'Hashed Password',
+    password TEXT NOT NULL COMMENT 'Hashed Password',
     creation_date datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'The time is in UTC format.',
     id int NOT NULL AUTO_INCREMENT,
+    salt varchar(16) NOT NULL,
     photoId int DEFAULT NULL,
     PRIMARY KEY (id),
     UNIQUE KEY id_UNIQUE (id)
@@ -219,8 +123,9 @@ app.get("/", (req,res) => {
 
 app.post("/register", (req,res) => {
     const q = "SELECT * FROM user WHERE email = ?";
-    const q1 = "INSERT INTO user (`username`,`email`,`password`,`creation_date`,`id`,`photoId`)VALUES(?,?,?,CURRENT_TIMESTAMP,0,0);";
+    const q1 = "INSERT INTO user (`username`,`email`,`password`,`creation_date`,`id`,`photoId`,`salt`)VALUES(?,?,?,CURRENT_TIMESTAMP,0,0,?);";
     var isEligible;
+    const salt = crypto.randomBytes(16).toString();
     db.query(q, [req.body.email], (err,data) => {
         if(err){
             console.log(err);
@@ -228,7 +133,7 @@ app.post("/register", (req,res) => {
         }else if(data.length > 0){
             return res.json({isRegistered: false, Message: "Bu mail adresi zaten kullanımda. Farklı bir adres deneyin."})
         }else{
-            db.query(q1, [req.body.username, req.body.email,sha256(req.body.password)], (err,data) => {
+            db.query(q1, [req.body.username, req.body.email,crypto.scryptSync(req.body.password,salt,32).toString('hex'), salt], (err,data) => {
                 if(err){
                     console.log(err);
                     return res.json({isRegistered: false, Message: "Bir hata oluştu."})
@@ -243,13 +148,15 @@ app.post("/register", (req,res) => {
 })
 
 app.post("/login", (req,res) => {
-    const q = "SELECT * FROM user WHERE email = ? AND password = ?";
-    db.query(q, [req.body.user, sha256(req.body.pwd)], (err, data) => {
+    const q = "SELECT * FROM user WHERE email = ?";
+    db.query(q, [req.body.user], (err, data) => {
+        const a = Buffer.from(data[0].password, "hex");
+        const b = crypto.scryptSync(req.body.pwd,data[0].salt,32);
         if(err) {
             console.log(err);
             return res.json("Giriş Başarısız.");
         }
-        if(data.length > 0){
+        else if(crypto.timingSafeEqual(a,b)){
             req.session.isLoggedIn = true;
             req.session.username = data[0].username;
             req.session.userId = data[0].id;

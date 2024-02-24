@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 const Sidebar = (props) => {
   const Menus = [
-    { title: "Ana Sayfa", src: "Home" , dir: "/"},
+    { title: "Ana Sayfa", src: "Home" , dir: "/"},//this code line is changed by izoy
     { title: "Ara", src: "Search" , dir: "/search"},
     { title: "Bildirimler", src: "Bell", dir: "/notifications" },
   ];

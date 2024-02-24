@@ -44,6 +44,7 @@ services:
       MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
       MYSQL_DATABASE: "${MYSQL_DATABASE}"
       FRONTEND_URL: "${FRONTEND_URL}"
+      SECRET_KEY: "${SECRET_KEY}"
     restart: unless-stopped
 
 networks:

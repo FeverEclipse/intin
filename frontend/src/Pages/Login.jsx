@@ -21,7 +21,7 @@ function Login() {
         }
     }
     return (        
-        <div className="login fixed my-auto inset-x-0 inset-y-0 pt-8 p-24">
+        <div className="login fixed my-auto inset-x-0 inset-y-0 pt-8">
             <Link to={"/"}>
             <img
             src="/assets/logo.png"
