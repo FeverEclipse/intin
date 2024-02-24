@@ -43,7 +43,7 @@ db.connect(err => {
 db.query(`
 CREATE TABLE IF NOT EXISTS entry(
     idEntry int NOT NULL AUTO_INCREMENT,
-    Title varchar(45) NOT NULL,
+    Title varchar(100) NOT NULL,
     Content text,
     userId int DEFAULT NULL,
     date datetime DEFAULT CURRENT_TIMESTAMP,
