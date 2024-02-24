@@ -5,6 +5,7 @@ WORKDIR /app
 
 # Copy the app files and build the app
 COPY . .
+RUN npm install
 ENV REACT_APP_BACKEND_URL="http://localhost:8383"
 RUN npm run build
 RUN npm install --global serve
